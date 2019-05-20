@@ -323,17 +323,37 @@ refvector<ulong> argmin_lnsin(const refvector<refvector<ulong> >& Y, const refve
    refvector<long> xu(bases.dim());
    refvector<long> xl(bases.dim());
    mat_full<long> xb(2,bases.dim());
-   for(long i=0; i< bases.dim(); i++) xb[0][i]=(long) ceil(x[i]);
-   for(long i=0; i< bases.dim(); i++) xb[1][i]=(long) floor(x[i]);
-   long ncandidates=(long) pow(2,bases.dim());
+   refvector<long> nonInt;
+   bool isInt = true;
+   for(long i=0; i< bases.dim(); i++)
+   {
+      isInt = isInt && (abs(x[i]-(double) lround(x[i])) < 2e-16);
+      if (abs(x[i]-(double) lround(x[i])) < 2e-16)
+      {
+         xb[0][i] = (ulong) lround(x[i]);
+         xb[1][i] = xb[0][i];
+      }
+      else
+      {
+         isInt=false;
+         xb[0][i]=(ulong) ceil(x[i]);
+         xb[1][i]=(ulong) floor(x[i]);
+         nonInt.push_back(i);
+      }
+   }
+   if (isInt) {
+      return xb[0];
+   }
+   long ncandidates=(long) pow(2,nonInt.dim());
    refvector<refvector<ulong> > candidates(ncandidates);
    for(long i=0; i<ncandidates; i++)
    {
-      refvector<ulong> c(bases.dim());
+      refvector<ulong> c;
+      c.copy(xb[0]);
       long d=i;
-      for(long j=0;j<bases.dim();j++)
+      for(long j=0;j<nonInt.dim();j++)
       {
-         c[j]=((xb[d % 2][j]  % bases[j]) + bases[j]) % bases[j];
+         c[nonInt[j]]=((xb[d % 2][nonInt[j]]  % bases[nonInt[j]]) + bases[nonInt[j]]) % bases[nonInt[j]];
          d=(d-(d%2))/2;
       }
       candidates[i]=c;
